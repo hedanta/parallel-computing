@@ -65,22 +65,11 @@ for m_idx in range(data.shape[1]):
     ci2 = (sorted2[s_idx], sorted2[e_idx])
     avg2_ci = np.mean(sorted2[s_idx:e_idx+1])
 
-    sorted1 = np.sort(arr1)
-    I1 = max(1, int(np.floor(p * len(sorted1))))
-    s1, e1, _ = min_ci(sorted1, I1)
-    ci1_min = sorted1[s1]
-    ci1_max = sorted1[e1]
-
-    sorted_full = np.sort(arr)
-    I_full = max(1, int(np.floor(p * len(sorted_full))))
-    s_f, e_f, _ = min_ci(sorted_full, I_full)
-    ci_full_min = sorted_full[s_f]
-    ci_full_max = sorted_full[e_f]
 
     print("\nНормальное распределение")
-    print(f"min = {arr.min():.3f} мс, avg = {avg:.3f} мс, var = {var:.3f}, std = {std:.3f} мс")
+    print(f"min = {arr.min():.3f} мс, avg = {avg:.3f} мс, var = {var:.3f}, std = {std:.3f} мс, delta = {delta:.3f}")
     print(f"CI всей выборки: [{ci_full[0]:.3f}, {ci_full[1]:.3f}]")
-    print(f"После удаления выбросов 3σ: avg' = {avg1:.3f} ± {delta1:.3f}, CI = [{ci1[0]:.3f}, {ci1[1]:.3f}]")
+    print(f"После удаления выбросов: avg' = {avg1:.3f} ± {delta1:.3f}, CI = [{ci1[0]:.3f}, {ci1[1]:.3f}]")
 
     print("\nБез предположения о нормальности")
     print(f"Младшая мода: {mode:.3f}")
@@ -89,17 +78,38 @@ for m_idx in range(data.shape[1]):
 
     means = [arr.min(), avg, avg1, avg2_ci]
     labels = ["t_min", "T_avg", "T_avg'", "T_avg'''"]
-    errors = [
-        0,
-        (ci_full_max - ci_full_min)/2,
-        (ci1_max - ci1_min)/2,
-        (ci2[1] - ci2[0])/2
+
+    ci_lows = [
+        arr.min(),
+        avg - delta,
+        avg1 - delta1,
+        ci2[0]
     ]
+
+    ci_highs = [
+        arr.min(),
+        avg + delta,
+        avg1 + delta1,
+        ci2[1]
+    ]
+
+    yerr_lower = [m - l for m, l in zip(means, ci_lows)]
+    yerr_upper = [h - m for m, h in zip(means, ci_highs)]
+    yerr = [yerr_lower, yerr_upper]
+
     x = range(len(means))
+
     plt.figure(figsize=(8,6))
-    plt.errorbar(x, means, yerr=errors, fmt='o', color='black', ecolor='black', elinewidth=2, capsize=6, markersize=8)
+    plt.errorbar(
+        x, means, yerr=yerr,
+        fmt='o', color='black', ecolor='black',
+        elinewidth=2, capsize=6, markersize=8
+    )
+
     plt.xticks(x, labels)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
+
     for i, m in enumerate(means):
-        plt.text(i, m + errors[i] + 0.05, f"{m:.2f}", ha='center', va='bottom', fontsize=10)
+        plt.text(i + 0.1, m, f"{m:.2f}", ha='left', va='center', fontsize=10)
+
     plt.show()
