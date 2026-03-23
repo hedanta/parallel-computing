@@ -2,5 +2,5 @@
 *.ilk
 *.obj
 *.pdb
-
+.vscode
 .history
